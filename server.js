@@ -35,16 +35,33 @@ function relevance(q, title) {
   return hit >= need ? hit / words.length : 0;
 }
 
+// استخراج الحجم (1 كيلو = 1000 جم، 400g = 400 جم ...) عشان نقارن نفس العبوة
+const AR_DIGITS = s => String(s).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/٫/g, '.');
+function sizeOf(text) {
+  const s = AR_DIGITS(text).toLowerCase();
+  const m = s.match(/(\d+(?:\.\d+)?)\s*(كيلو ?جرام|كيلو ?غرام|كيلو|كجم|كغ|kg|جرام|غرام|جم|غم|غ|g|gm|مل|ml|لتر|l)(?![a-z\u0600-\u06ff])/);
+  if (!m) return null;
+  const n = parseFloat(m[1]); const u = m[2];
+  if (/كيلو|كجم|كغ|kg/.test(u)) return { v: n * 1000, k: 'g' };
+  if (/لتر|^l$/.test(u)) return { v: n * 1000, k: 'ml' };
+  if (/مل|ml/.test(u)) return { v: n, k: 'ml' };
+  return { v: n, k: 'g' };
+}
+
 function withTimeout(p, ms) {
   return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('انتهى الوقت')), ms))]);
 }
 
 async function searchStore(store, q) {
   const t0 = Date.now();
+  const want = sizeOf(q);
+  // نبحث في المتجر بدون الحجم (المواقع تكتبه بطرق مختلفة) ثم نفلتر بالحجم بأنفسنا
+  const sq = want ? AR_DIGITS(q).replace(/(\d+(?:\.\d+)?)\s*\S*/g, '').trim() || q : q;
   try {
-    const items = await withTimeout(adapters[store.type](store, q), STORE_TIMEOUT);
+    const items = await withTimeout(adapters[store.type](store, sq), STORE_TIMEOUT);
     const good = items
       .filter(i => i.price && i.title)
+      .filter(i => { if (!want) return true; const s = sizeOf(i.title); return !s || (s.k === want.k && Math.abs(s.v - want.v) < 1); })
       .map(i => ({ ...i, score: relevance(q, i.title) }))
       .filter(i => i.score >= 0.5)
       .sort((a, b) => b.score - a.score || a.price - b.price)
