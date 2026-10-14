@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>صياد الأسعار</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#f2f5f9;--card:#fff;--ink:#14213d;--mute:#6b7689;--line:#e3e8ef;
+        --best:#2e9e3f;--mid:#e9b10b;--high:#d62f2f;--accent:#14213d}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Cairo,system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+  header{background:linear-gradient(135deg,#14213d,#24396b);color:#fff;padding:22px 16px 60px;text-align:center}
+  header h1{margin:0;font-size:30px;font-weight:800}
+  header p{margin:4px 0 0;opacity:.8;font-size:14px}
+  .search{max-width:640px;margin:-34px auto 0;padding:0 16px}
+  .box{display:flex;background:var(--card);border-radius:16px;box-shadow:0 8px 24px #14213d22;overflow:hidden}
+  .box input{flex:1;border:0;padding:16px;font:600 17px Cairo;outline:0;min-width:0}
+  .box button{border:0;background:var(--best);color:#fff;font:800 16px Cairo;padding:0 22px;cursor:pointer}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 0}
+  .chip{background:#fff;border:1px solid var(--line);border-radius:20px;padding:4px 12px;font-size:13px;cursor:pointer}
+  main{max-width:640px;margin:16px auto 40px;padding:0 16px}
+  .summary{background:var(--card);border-radius:16px;padding:14px 16px;margin-bottom:12px;display:none}
+  .summary .row{display:flex;justify-content:space-between;font-size:14px;color:var(--mute)}
+  .summary b{color:var(--ink)}
+  .offer{display:flex;gap:12px;align-items:center;background:var(--card);border-radius:16px;padding:12px;margin-bottom:10px;
+         border-inline-start:6px solid var(--line);text-decoration:none;color:inherit;position:relative}
+  .offer.best{border-color:var(--best);box-shadow:0 4px 14px #2e9e3f33}
+  .offer.mid{border-color:var(--mid)} .offer.high{border-color:var(--high)}
+  .offer img{width:64px;height:64px;object-fit:contain;border-radius:10px;background:#f7f8fa;flex-shrink:0}
+  .offer .info{flex:1;min-width:0}
+  .offer .store{font-weight:800;font-size:15px;display:flex;align-items:center;gap:6px}
+  .offer .dot{width:10px;height:10px;border-radius:50%}
+  .offer .title{font-size:13px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .offer .price{text-align:center;flex-shrink:0}
+  .offer .price b{font-size:22px;display:block;line-height:1.1}
+  .offer .price s{font-size:12px;color:var(--mute)}
+  .tag{position:absolute;top:-8px;left:12px;font-size:11px;font-weight:800;color:#fff;padding:2px 10px;border-radius:10px}
+  .best .tag{background:var(--best)} .high .tag{background:var(--high)}
+  .oos{opacity:.5}
+  .status{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+  .st{font-size:12px;padding:3px 10px;border-radius:12px;background:#fff;border:1px solid var(--line)}
+  .st.ok{border-color:#2e9e3f66} .st.err{border-color:#d62f2f66;color:var(--high)}
+  .loading{text-align:center;padding:30px;color:var(--mute)}
+  .spinner{width:36px;height:36px;border:4px solid var(--line);border-top-color:var(--best);border-radius:50%;animation:s 1s linear infinite;margin:0 auto 10px}
+  @keyframes s{to{transform:rotate(360deg)}}
+  footer{text-align:center;font-size:12px;color:var(--mute);padding-bottom:20px}
+</style>
+</head>
+<body>
+<header>
+  <h1>صياد الأسعار 💰🔍</h1>
+  <p>اكتب اسم المنتج ونبحث لك في كل المتاجر بنفس اللحظة</p>
+</header>
+
+<div class="search">
+  <form class="box" id="f">
+    <input id="q" placeholder="مثال: سيريلاك قمح 1 كيلو" autocomplete="off">
+    <button>ابحث</button>
+  </form>
+  <div class="chips" id="chips"></div>
+</div>
+
+<main>
+  <div class="summary" id="sum"></div>
+  <div id="list"></div>
+  <div class="status" id="status"></div>
+</main>
+<footer>الأسعار مأخوذة لحظياً من مواقع المتاجر وقد تختلف داخل الفروع</footer>
+
+<script>
+const API = '';   // إذا الواجهة على سيرفر ثاني حط رابط السيرفر هنا
+const $ = id => document.getElementById(id);
+const fmt = n => n.toLocaleString('ar-SA', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+['سيريلاك قمح', 'بانادول', 'حليب نان 1', 'بامبرز', 'سيتافيل'].forEach(t => {
+  const c = document.createElement('span'); c.className = 'chip'; c.textContent = t;
+  c.onclick = () => { $('q').value = t; search(); }; $('chips').appendChild(c);
+});
+
+$('f').onsubmit = e => { e.preventDefault(); search(); };
+
+async function search() {
+  const q = $('q').value.trim(); if (q.length < 2) return;
+  $('sum').style.display = 'none'; $('status').innerHTML = '';
+  $('list').innerHTML = '<div class="loading"><div class="spinner"></div>نبحث في كل المتاجر…</div>';
+  try {
+    const r = await fetch(`${API}/api/search?q=${encodeURIComponent(q)}`);
+    render(await r.json());
+  } catch (e) {
+    $('list').innerHTML = '<div class="loading">تعذّر الاتصال بالسيرفر</div>';
+  }
+}
+
+function render(d) {
+  const offers = d.offers || [];
+  if (!offers.length) {
+    $('list').innerHTML = '<div class="loading">ما لقينا نتائج. جرّب كلمة أبسط أو اسم إنجليزي.</div>';
+  } else {
+    const inStock = offers.filter(o => o.inStock);
+    const min = inStock[0]?.price, max = inStock[inStock.length - 1]?.price;
+    $('sum').style.display = 'block';
+    $('sum').innerHTML = `
+      <div class="row"><span>أقل سعر</span><b style="color:var(--best)">${fmt(min)} ريال</b></div>
+      <div class="row"><span>أعلى سعر</span><b style="color:var(--high)">${fmt(max)} ريال</b></div>
+      <div class="row"><span>توفير لو اشتريت الأرخص</span><b>${fmt(max - min)} ريال</b></div>
+      <div class="row"><span>تاريخ الرصد</span><b>${new Date(d.at).toLocaleString('ar-SA')}</b></div>`;
+    $('list').innerHTML = offers.map((o, i) => {
+      const cls = !o.inStock ? 'oos' : o.price === min ? 'best' : o.price === max && inStock.length > 2 ? 'high' : 'mid';
+      const tag = cls === 'best' ? '<span class="tag">✓ أفضل سعر</span>' : cls === 'high' ? '<span class="tag">السعر الأعلى</span>' : '';
+      return `<a class="offer ${cls}" href="${o.url || '#'}" target="_blank" rel="noopener">
+        ${tag}
+        <img src="${o.image || ''}" alt="" onerror="this.style.visibility='hidden'">
+        <div class="info">
+          <div class="store"><span class="dot" style="background:${o.storeColor}"></span>${o.storeName}</div>
+          <div class="title">${o.title.replace(/</g, '&lt;')}</div>
+          ${o.inStock ? '' : '<div class="title" style="color:var(--high)">غير متوفر</div>'}
+        </div>
+        <div class="price"><b>${fmt(o.price)}</b>ريال${o.oldPrice && o.oldPrice > o.price ? `<br><s>${fmt(o.oldPrice)}</s>` : ''}</div>
+      </a>`;
+    }).join('');
+  }
+  $('status').innerHTML = (d.status || []).map(s =>
+    `<span class="st ${s.ok ? 'ok' : 'err'}">${s.ok ? '✓' : '✗'} ${s.name}${s.ok ? ` (${s.count})` : ''}</span>`).join('');
+}
+</script>
+</body>
+</html>
