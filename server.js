@@ -24,11 +24,15 @@ const norm = s => String(s).toLowerCase()
 // نسبة تطابق كلمات البحث مع اسم المنتج
 // "هيكل" الكلمة بدون حروف المد، عشان "سيريلاك" = "سيرلاك" و"بانادول" = "بندول"
 const skel = s => s.replace(/[اويء]/g, '');
+// الأرقام والوحدات (1، كيلو، جم) ما تُحسب؛ الكلمات المهمة لازم تتطابق كلها (أو كلها إلا وحدة لو 3 كلمات فأكثر)
+const UNITS = /^(\d+([.,]\d+)?|كيلو|كجم|كغ|جم|جرام|غرام|غم|مل|لتر|kg|g|ml|حبه|حبة|قرص|علبه|علبة)$/i;
 function relevance(q, title) {
-  const words = norm(q).split(' ').filter(w => w.length > 1);
+  const words = norm(q).split(' ').filter(w => w.length > 1 && !UNITS.test(w));
   if (!words.length) return 1;
   const t = norm(title), ts = skel(t);
-  return words.filter(w => t.includes(w) || (skel(w).length > 2 && ts.includes(skel(w)))).length / words.length;
+  const hit = words.filter(w => t.includes(w) || (skel(w).length > 2 && ts.includes(skel(w)))).length;
+  const need = words.length >= 3 ? words.length - 1 : words.length;
+  return hit >= need ? hit / words.length : 0;
 }
 
 function withTimeout(p, ms) {

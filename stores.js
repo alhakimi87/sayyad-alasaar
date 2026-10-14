@@ -29,7 +29,8 @@ module.exports = [
   { id: 'carrefour', name: 'كارفور',     group: 'سوبرماركت', type: 'carrefour', color: '#1e4fa1',
     searchUrl: 'https://www.carrefourksa.com/mafsau/ar/search?keyword={q}' },
   { id: 'lulu',      name: 'لولو',       group: 'سوبرماركت', type: 'akinon',    color: '#d71920',
-    searchUrl: 'https://gcc.luluhypermarket.com/ar-sa/list/?search_text={q}' },
+    searchUrl: 'https://gcc.luluhypermarket.com/ar-sa/list/?search_text={q}',
+    disabled: true, note: 'يرفض طلبات السيرفرات السحابية (403)، المحوّل جاهز لو تغيّر' },
   { id: 'tamimi',    name: 'التميمي',    group: 'سوبرماركت', type: 'tamimi',    color: '#7a1f2b',
     searchUrl: 'https://shop.tamimimarkets.com/ar/search?query={q}' },
 
@@ -37,5 +38,6 @@ module.exports = [
   { id: 'amazon',    name: 'أمازون',     group: 'أونلاين', type: 'amazon', color: '#ff9900',
     searchUrl: 'https://www.amazon.sa/s?k={q}&language=ar_AE' },
   { id: 'noon',      name: 'نون',        group: 'أونلاين', type: 'noon',   color: '#e6c300',
-    searchUrl: 'https://www.noon.com/saudi-ar/search/?q={q}' },
+    searchUrl: 'https://www.noon.com/saudi-ar/search/?q={q}',
+    disabled: true, note: 'يرفض طلبات السيرفرات السحابية (403)، المحوّل جاهز لو تغيّر' },
 ];
