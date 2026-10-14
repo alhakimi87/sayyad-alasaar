@@ -39,7 +39,7 @@ function relevance(q, title) {
 const AR_DIGITS = s => String(s).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/٫/g, '.');
 function sizeOf(text) {
   const s = AR_DIGITS(text).toLowerCase();
-  const m = s.match(/(\d+(?:\.\d+)?)\s*(كيلو ?جرام|كيلو ?غرام|كيلو|كجم|كغ|kg|جرام|غرام|جم|غم|غ|g|gm|مل|ml|لتر|l)(?![a-z\u0600-\u06ff])/);
+  const m = s.match(/(\d+(?:\.\d+)?)\s*(كيلو ?جرام|كيلو ?غرام|كيلو|كجم|كغم|كغ|kg|جرام|غرام|جم|غم|غ|g|gm|مل|ml|لتر|l)(?![a-z\u0621-\u064a])/);
   if (!m) return null;
   const n = parseFloat(m[1]); const u = m[2];
   if (/كيلو|كجم|كغ|kg/.test(u)) return { v: n * 1000, k: 'g' };
